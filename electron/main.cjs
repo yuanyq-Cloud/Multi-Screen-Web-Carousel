@@ -39,10 +39,17 @@ function createWindow() {
 
     // Allow window.open() from renderer to create properly positioned BrowserWindows.
     // Electron automatically parses left/top/width/height from the features string.
-    win.webContents.setWindowOpenHandler(() => {
+    win.webContents.setWindowOpenHandler(({ url }) => {
+        const isSlideshowWindow = typeof url === 'string' && url.includes('#/slideshow')
         return {
             action: 'allow',
             overrideBrowserWindowOptions: {
+                autoHideMenuBar: true,
+                ...(isSlideshowWindow && {
+                    fullscreen: true,
+                    frame: false,
+                    backgroundColor: '#000000',
+                }),
                 webPreferences: {
                     nodeIntegration: false,
                     contextIsolation: true,
@@ -120,7 +127,7 @@ app.whenReady().then(() => {
     })
 
     ipcMain.handle('config:write', async (_event, data) => {
-        const header = '// Multi-Screen Web Carousel \u2014 Configuration\n' + '// Auto-generated. You can edit this file manually.\n' + '// Supported comments: // line comments (JSONC format).\n' + '//\n' + '// folders[].id         \u2014 unique folder identifier\n' + '// folders[].name       \u2014 display name\n' + '// folders[].path       \u2014 absolute path to the image directory\n' + '// mappings.<id>.folderId   \u2014 which folder to play on that screen\n' + '// mappings.<id>.duration   \u2014 slide duration in seconds\n' + '// mappings.<id>.transition \u2014 fade | slide | cube | flip | coverflow\n\n'
+        const header = '// Multi-Screen Web Carousel \u2014 Configuration\n' + '// Auto-generated. You can edit this file manually.\n' + '// Supported comments: // line comments (JSONC format).\n' + '//\n' + '// folders[].id            \u2014 unique folder identifier\n' + '// folders[].name          \u2014 display name\n' + '// folders[].path          \u2014 absolute path to the image directory\n' + '// mappings.<id>.folderId      \u2014 which folder to play on that screen\n' + '// mappings.<id>.duration      \u2014 slide duration in seconds\n' + '// mappings.<id>.transition    \u2014 fade | slide | cube | flip | coverflow\n' + '// mappings.<id>.playbackOrder \u2014 random | name | date-desc | date-asc\n\n'
         await fs.promises.writeFile(configPath, header + JSON.stringify(data, null, 2) + '\n', 'utf-8')
     })
 
@@ -149,7 +156,7 @@ app.whenReady().then(() => {
                 const normalized = filePath.replace(/\\/g, '/')
                 const urlPath = normalized.startsWith('/') ? normalized : '/' + normalized
                 const url = `carousel-local://localhost${encodeURI(urlPath)}`
-                images.push({ name: entry.name, url, size: stat.size })
+                images.push({ name: entry.name, url, size: stat.size, modifiedTime: stat.mtimeMs })
             }
             images.sort((a, b) => a.name.localeCompare(b.name))
             return images

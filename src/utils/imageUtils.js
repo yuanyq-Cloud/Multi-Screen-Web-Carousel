@@ -19,7 +19,7 @@ export async function readImagesFromDirectory(dirHandle) {
             const file = await handle.getFile()
             if (isImageFile(name, file.type)) {
                 const url = URL.createObjectURL(file)
-                images.push({ name, url, size: file.size })
+                images.push({ name, url, size: file.size, modifiedTime: file.lastModified })
             }
         }
     }
@@ -37,4 +37,35 @@ export function revokeImageUrls(images) {
             URL.revokeObjectURL(img.url)
         }
     })
+}
+
+/**
+ * Create a playback-ordered copy of an image list.
+ * @param {Array<{name?:string, modifiedTime?:number}>} images
+ * @param {'random'|'name'|'date'|'date-asc'|'date-desc'} order
+ */
+export function getPlaybackImages(images, order = 'random') {
+    const list = Array.isArray(images) ? [...images] : []
+    if (list.length <= 1) return list
+
+    if (order === 'name') {
+        list.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        return list
+    }
+
+    if (order === 'date' || order === 'date-asc' || order === 'date-desc') {
+        list.sort((a, b) => {
+            const timeA = Number(a.modifiedTime) || 0
+            const timeB = Number(b.modifiedTime) || 0
+            if (timeA !== timeB) return order === 'date-desc' ? timeB - timeA : timeA - timeB
+            return (a.name || '').localeCompare(b.name || '')
+        })
+        return list
+    }
+
+    for (let i = list.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[list[i], list[j]] = [list[j], list[i]]
+    }
+    return list
 }

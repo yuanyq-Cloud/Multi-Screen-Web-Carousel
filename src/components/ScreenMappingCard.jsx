@@ -15,6 +15,13 @@ export default function ScreenMappingCard({ screen, folders, mapping, onMappingC
     { value: 'coverflow', label: t('transitionCoverflow'), icon: '🗂' },
   ]
 
+  const PLAYBACK_ORDERS = [
+    { value: 'random', label: t('orderRandom') },
+    { value: 'name', label: t('orderByName') },
+    { value: 'date-desc', label: t('orderNewestFirst') },
+    { value: 'date-asc', label: t('orderOldestFirst') },
+  ]
+
   const update = (field, value) => {
     onMappingChange(screen.id, { ...mapping, [field]: value })
   }
@@ -93,6 +100,22 @@ export default function ScreenMappingCard({ screen, folders, mapping, onMappingC
               <span>1s</span>
               <span>30s</span>
             </div>
+          </div>
+
+          {/* Playback Order */}
+          <div className={styles.field}>
+            <label className={styles.label}>{t('playbackOrder')}</label>
+            <select
+              className={styles.select}
+              value={mapping.playbackOrder || 'random'}
+              onChange={e => update('playbackOrder', e.target.value)}
+            >
+              {PLAYBACK_ORDERS.map(order => (
+                <option key={order.value} value={order.value}>
+                  {order.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Transition */}

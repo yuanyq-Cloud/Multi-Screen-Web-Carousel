@@ -22,7 +22,7 @@ export async function loadConfig() {
  * Only folders that have a .path property (Electron-picked) are saved.
  *
  * @param {Array<{id:string, name:string, path?:string}>} folders
- * @param {object} mappings  { [screenId]: { folderId, duration, transition } }
+ * @param {object} mappings  { [screenId]: { folderId, duration, transition, playbackOrder } }
  */
 export async function saveConfig(folders, mappings) {
     if (!window.electronAPI) return

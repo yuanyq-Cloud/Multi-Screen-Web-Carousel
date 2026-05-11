@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useFolderPicker } from '../hooks/useFolderPicker'
 import { useScreenDetection } from '../hooks/useScreenDetection'
@@ -8,10 +8,20 @@ import ScreenMappingCard from '../components/ScreenMappingCard'
 import SlideshowCarousel from '../components/SlideshowCarousel'
 import { saveSlideshowData } from '../utils/storageUtils'
 import { loadConfig, saveConfig } from '../utils/configUtils'
+import { getPlaybackImages } from '../utils/imageUtils'
 import styles from './Dashboard.module.css'
 
 const DEFAULT_DURATION = 5
 const DEFAULT_TRANSITION = 'fade'
+const DEFAULT_PLAYBACK_ORDER = 'random'
+
+function normalizePlaybackOrder(order) {
+  if (order === 'date') return 'date-desc'
+  if (order === 'date-asc' || order === 'date-desc' || order === 'name' || order === 'random') {
+    return order
+  }
+  return DEFAULT_PLAYBACK_ORDER
+}
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -25,7 +35,7 @@ export default function Dashboard() {
     permissionState, detectScreens,
   } = useScreenDetection()
 
-  // mappings: { [screenId]: { folderId, duration, transition } }
+  // mappings: { [screenId]: { folderId, duration, transition, playbackOrder } }
   const [mappings, setMappings] = useState({})
   const [launchErrors, setLaunchErrors] = useState([])
   const [previewScreen, setPreviewScreen] = useState(null)
@@ -86,12 +96,16 @@ export default function Dashboard() {
   }, [])
 
   // Ensure every screen has a default mapping entry
-  const getMappingForScreen = (screenId) => ({
-    folderId: null,
-    duration: DEFAULT_DURATION,
-    transition: DEFAULT_TRANSITION,
-    ...mappings[screenId],
-  })
+  const getMappingForScreen = (screenId) => {
+    const existing = mappings[screenId] || {}
+    return {
+      folderId: null,
+      duration: DEFAULT_DURATION,
+      transition: DEFAULT_TRANSITION,
+      ...existing,
+      playbackOrder: normalizePlaybackOrder(existing.playbackOrder),
+    }
+  }
 
   const configuredMappings = screens
     .map(s => ({ ...getMappingForScreen(s.id), screenId: s.id }))
@@ -111,9 +125,10 @@ export default function Dashboard() {
           screenId: screen.id,
           screen,
           folder,
-          images: folder.images,
+          images: getPlaybackImages(folder.images, m.playbackOrder),
           duration: m.duration,
           transition: m.transition,
+          playbackOrder: m.playbackOrder,
           folderName: folder.name,
         }
       })
@@ -166,6 +181,10 @@ export default function Dashboard() {
   const previewFolder = previewMapping?.folderId
     ? folders.find(f => f.id === previewMapping.folderId)
     : null
+  const previewImages = useMemo(() => {
+    if (!previewFolder) return []
+    return getPlaybackImages(previewFolder.images, previewMapping?.playbackOrder)
+  }, [previewFolder, previewMapping?.playbackOrder])
 
   return (
     <div className={styles.layout}>
@@ -272,7 +291,7 @@ export default function Dashboard() {
                 <div className={styles.previewWindow}>
                   {previewFolder ? (
                     <SlideshowCarousel
-                      images={previewFolder.images}
+                      images={previewImages}
                       duration={previewMapping.duration}
                       transition={previewMapping.transition}
                       showControls

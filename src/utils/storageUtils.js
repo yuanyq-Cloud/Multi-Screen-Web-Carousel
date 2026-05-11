@@ -12,7 +12,7 @@ const LS_KEY = 'mswc_slideshowData'
 
 /**
  * Save all screen configurations for child window access.
- * @param {Array} mappings - Array of {screenId, images, duration, transition}
+ * @param {Array} mappings - Array of {screenId, images, duration, transition, playbackOrder}
  */
 export function saveSlideshowData(mappings) {
     window[STORAGE_KEY] = {}
@@ -21,6 +21,7 @@ export function saveSlideshowData(mappings) {
             images: m.images,
             duration: m.duration,
             transition: m.transition,
+            playbackOrder: m.playbackOrder,
             folderName: m.folderName,
         }
     })

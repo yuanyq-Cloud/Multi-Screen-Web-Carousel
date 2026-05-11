@@ -52,11 +52,18 @@ export default {
         selectFolder: '— Select a folder —',
         addFolderFirst: 'Add folders in the panel above first.',
         slideDuration: 'Slide Duration',
+        playbackOrder: 'Playback Order',
         transitionEffect: 'Transition Effect',
         configured: 'Configured',
         notConfigured: 'Not configured',
         imagesInFolder: '{{count}} images',
         moreImages: '+{{count}} more',
+
+        // Playback order labels
+        orderRandom: 'Random',
+        orderByName: 'By Name',
+        orderNewestFirst: 'Newest First',
+        orderOldestFirst: 'Oldest First',
 
         // Transition labels
         transitionFade: 'Fade',

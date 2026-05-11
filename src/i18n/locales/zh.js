@@ -52,11 +52,18 @@ export default {
         selectFolder: '— 选择文件夹 —',
         addFolderFirst: '请先在上方面板添加文件夹。',
         slideDuration: '切换间隔',
+        playbackOrder: '播放顺序',
         transitionEffect: '过渡效果',
         configured: '已配置',
         notConfigured: '未配置',
         imagesInFolder: '{{count}} 张图片',
         moreImages: '+{{count}} 张',
+
+        // Playback order labels
+        orderRandom: '随机',
+        orderByName: '按名称排序',
+        orderNewestFirst: '最新优先',
+        orderOldestFirst: '最旧优先',
 
         // Transition labels
         transitionFade: '淡入淡出',
