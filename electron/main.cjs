@@ -20,6 +20,17 @@ protocol.registerSchemesAsPrivileged([
 
 const isDev = !app.isPackaged
 const preloadPath = path.join(__dirname, 'preload.cjs')
+const folderWatchers = new Map()
+
+function stopFolderWatcher(screenId) {
+    const watcherEntry = folderWatchers.get(screenId)
+    if (!watcherEntry) return
+    if (watcherEntry.timer) {
+        clearTimeout(watcherEntry.timer)
+    }
+    watcherEntry.watcher.close()
+    folderWatchers.delete(screenId)
+}
 
 function createWindow() {
     const win = new BrowserWindow({
@@ -164,6 +175,42 @@ app.whenReady().then(() => {
             console.error('folder:read-images error:', err)
             return []
         }
+    })
+
+    ipcMain.handle('folder:watch', async (event, screenId, folderPath) => {
+        if (typeof screenId !== 'string' || typeof folderPath !== 'string' || !folderPath) {
+            return false
+        }
+
+        stopFolderWatcher(screenId)
+
+        try {
+            const watcher = fs.watch(folderPath, { persistent: false }, () => {
+                const entry = folderWatchers.get(screenId)
+                if (!entry) return
+                if (entry.timer) clearTimeout(entry.timer)
+                entry.timer = setTimeout(() => {
+                    if (!event.sender.isDestroyed()) {
+                        event.sender.send('folder:changed', { screenId, folderPath })
+                    }
+                }, 180)
+            })
+
+            folderWatchers.set(screenId, { watcher, timer: null })
+            event.sender.once('destroyed', () => {
+                stopFolderWatcher(screenId)
+            })
+            return true
+        } catch (err) {
+            console.error('folder:watch error:', err)
+            return false
+        }
+    })
+
+    ipcMain.handle('folder:unwatch', async (_event, screenId) => {
+        if (typeof screenId !== 'string') return false
+        stopFolderWatcher(screenId)
+        return true
     })
 
     // ── Screen IPC ─────────────────────────────────────────────────────────

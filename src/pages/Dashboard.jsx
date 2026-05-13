@@ -125,6 +125,7 @@ export default function Dashboard() {
           screenId: screen.id,
           screen,
           folder,
+          folderPath: folder.path,
           images: getPlaybackImages(folder.images, m.playbackOrder),
           duration: m.duration,
           transition: m.transition,

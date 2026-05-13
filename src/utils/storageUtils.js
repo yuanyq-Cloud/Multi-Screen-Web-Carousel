@@ -23,6 +23,7 @@ export function saveSlideshowData(mappings) {
             transition: m.transition,
             playbackOrder: m.playbackOrder,
             folderName: m.folderName,
+            folderPath: m.folderPath,
         }
     })
     // Persist to localStorage so Electron child windows (separate renderer

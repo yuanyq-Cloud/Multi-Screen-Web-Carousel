@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import SlideshowCarousel from '../components/SlideshowCarousel'
 import { getSlideshowData } from '../utils/storageUtils'
+import { getPlaybackImages } from '../utils/imageUtils'
 import styles from './Slideshow.module.css'
 
 export default function Slideshow() {
@@ -12,6 +13,7 @@ export default function Slideshow() {
   const [data, setData] = useState(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showOverlay, setShowOverlay] = useState(true)
+  const imageSignatureRef = useRef('')
 
   // Try to get data from opener (parent window) or own window
   useEffect(() => {
@@ -44,6 +46,56 @@ export default function Slideshow() {
     const timer = setTimeout(() => setShowOverlay(false), 3000)
     return () => clearTimeout(timer)
   }, [data])
+
+  // Electron: watch folder changes (add/remove/rename) and refresh slideshow images.
+  useEffect(() => {
+    if (!screenId || !data?.folderPath || !window.electronAPI?.folder) return
+
+    let cancelled = false
+    let refreshTimer = null
+    let pollTimer = null
+
+    const buildSignature = (images) => images
+      .map((img) => `${img.name}|${Number(img.modifiedTime) || 0}|${Number(img.size) || 0}`)
+      .join('||')
+
+    const refreshImages = async () => {
+      try {
+        const latest = await window.electronAPI.folder.readImages(data.folderPath)
+        if (cancelled) return
+        const nextSignature = buildSignature(latest)
+        if (nextSignature === imageSignatureRef.current) return
+        imageSignatureRef.current = nextSignature
+        setData(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            images: getPlaybackImages(latest, prev.playbackOrder),
+          }
+        })
+      } catch {
+        // Ignore transient read errors while files are being moved or renamed.
+      }
+    }
+
+    const unsubscribe = window.electronAPI.folder.onChanged((payload) => {
+      if (!payload || payload.screenId !== screenId) return
+      if (refreshTimer) clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(refreshImages, 120)
+    })
+
+    window.electronAPI.folder.watch(screenId, data.folderPath)
+    refreshImages()
+    pollTimer = setInterval(refreshImages, 2500)
+
+    return () => {
+      cancelled = true
+      if (refreshTimer) clearTimeout(refreshTimer)
+      if (pollTimer) clearInterval(pollTimer)
+      unsubscribe?.()
+      window.electronAPI.folder.unwatch(screenId)
+    }
+  }, [data?.folderPath, screenId])
 
   // Request fullscreen
   const requestFullscreen = useCallback(() => {
