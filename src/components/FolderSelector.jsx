@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import styles from './FolderSelector.module.css'
 
 export default function FolderSelector({ folders, loading, error, isSupported, onPickFolder, onRemoveFolder }) {
-  const { t } = useTranslation()
+  const { t } = useTranslation() 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
